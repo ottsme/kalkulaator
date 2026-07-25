@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intressi- ja viivisekalkulaator (VÕS)</title>
+<style>
+  :root{
+    --red:#9e0303;
+    --red-dark:#7a0202;
+    --red-wash:#faf3f3;
+    --ink:#1b1a19;
+    --muted:#6a6763;
+    --line:#e2dfd9;
+    --line-soft:#eeece7;
+    --paper:#f4f3f0;
+    --card:#ffffff;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"Consolas","SF Mono",ui-monospace,"DejaVu Sans Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 16px 48px;
+  }
+  .wrap{max-width:660px;margin:0 auto}
+
+  /* ---- letterhead ---- */
+  .head{position:relative;margin-bottom:22px}
+  .eyebrow{
+    font-family:var(--sans);
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--red);font-weight:600;margin:0 0 6px;
+  }
+  .head h1{
+    font-family:var(--serif);
+    font-weight:600;font-size:clamp(22px,4.4vw,29px);
+    letter-spacing:-.01em;margin:0;color:var(--ink);
+  }
+  .rule{height:2px;background:var(--red);border:0;margin:14px 0 0;width:100%}
+  .info-btn{
+    position:absolute;top:2px;right:0;
+    font-family:var(--sans);font-size:12.5px;
+    background:transparent;border:1px solid var(--line);
+    color:var(--muted);border-radius:999px;padding:5px 13px;cursor:pointer;
+  }
+  .info-btn:hover{border-color:var(--red);color:var(--red)}
+
+  /* ---- gap banner ---- */
+  .banner{
+    display:none;margin:0 0 18px;padding:11px 14px;
+    background:var(--red-wash);border:1px solid #e7c9c9;border-left:3px solid var(--red);
+    font-size:13px;color:var(--red-dark);border-radius:4px;
+  }
+  .banner.show{display:block}
+
+  /* ---- card ---- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:8px;
+    box-shadow:0 1px 2px rgba(0,0,0,.03),0 6px 24px rgba(0,0,0,.04);
+    overflow:hidden;
+  }
+
+  /* ---- tabs ---- */
+  .tabs{display:flex;border-bottom:1px solid var(--line)}
+  .tab{
+    flex:1;appearance:none;background:transparent;border:0;cursor:pointer;
+    font-family:var(--sans);font-size:14.5px;font-weight:500;color:var(--muted);
+    padding:15px 12px;position:relative;letter-spacing:.005em;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{color:var(--red);border-bottom-color:var(--red);font-weight:600}
+  .tab:first-child{border-right:1px solid var(--line-soft)}
+
+  /* ---- form ---- */
+  .body{padding:24px 26px 26px}
+  .field{margin-bottom:18px}
+  .field:last-of-type{margin-bottom:0}
+  label.lbl{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 6px;letter-spacing:.01em}
+  .hint{font-size:12px;color:var(--muted);margin:5px 0 0}
+  .amount-wrap{position:relative}
+  .amount-wrap .eur{
+    position:absolute;right:13px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:14px;pointer-events:none;
+  }
+  input[type="text"],input[type="date"]{
+    width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:11px 12px;
+  }
+  input[type="text"]{padding-right:30px;font-variant-numeric:tabular-nums}
+  input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(158,3,3,.10)}
+  .dates{display:flex;gap:14px}
+  .dates .field{flex:1;margin-bottom:0}
+
+  /* ---- buttons ---- */
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  button.act{
+    font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;
+    border-radius:6px;padding:11px 18px;border:1px solid transparent;letter-spacing:.01em;
+  }
+  .btn-primary{background:var(--red);color:#fff}
+  .btn-primary:hover{background:var(--red-dark)}
+  .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .btn-ghost:disabled{color:#b9b6b0;border-color:var(--line-soft);cursor:not-allowed}
+  button.act:focus-visible,.tab:focus-visible,.info-btn:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+  /* ---- error ---- */
+  .error{
+    display:none;margin-top:18px;padding:11px 14px;border-radius:6px;
+    background:var(--red-wash);border:1px solid #e7c9c9;color:var(--red-dark);font-size:13.5px;
+  }
+  .error.show{display:block}
+
+  /* ---- result ---- */
+  .result{display:none;margin-top:24px;padding-top:22px;border-top:1px solid var(--line-soft)}
+  .result.show{display:block}
+  .result .rlabel{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .result .figure{
+    font-family:var(--serif);font-weight:600;color:var(--red);
+    font-size:clamp(30px,7vw,42px);line-height:1.1;margin:4px 0 0;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  }
+  .result .sub{display:flex;gap:26px;margin-top:14px;flex-wrap:wrap}
+  .result .sub div{font-size:13px;color:var(--muted)}
+  .result .sub b{display:block;font-size:16px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+
+  /* ---- footer ---- */
+  footer{margin:26px 2px 0;font-size:12px;color:var(--muted);line-height:1.6}
+  footer a{color:var(--muted)}
+  footer a:hover{color:var(--red)}
+
+  /* ---- modal ---- */
+  .backdrop{
+    display:none;position:fixed;inset:0;background:rgba(24,22,20,.44);
+    z-index:50;padding:24px;align-items:center;justify-content:center;
+  }
+  .backdrop.show{display:flex}
+  .modal{
+    background:#fff;border-radius:10px;max-width:720px;width:100%;
+    max-height:88vh;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 18px 60px rgba(0,0,0,.32);
+  }
+  .modal header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;border-bottom:1px solid var(--line);
+  }
+  .modal header h2{font-family:var(--serif);font-size:18px;margin:0;font-weight:600}
+  .x{background:transparent;border:0;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:6px}
+  .x:hover{color:var(--red);background:var(--red-wash)}
+  .modal .content{padding:18px 20px;overflow:auto}
+  .report-box{
+    font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--ink);
+    white-space:pre;overflow:auto;background:#fbfaf8;border:1px solid var(--line);
+    border-radius:6px;padding:16px;resize:both;min-height:220px;max-height:60vh;width:100%;
+    tab-size:2;
+  }
+  .info-text{font-size:14px;line-height:1.65;color:var(--ink)}
+  .info-text h3{font-family:var(--serif);font-size:15px;margin:18px 0 6px;color:var(--red-dark)}
+  .info-text h3:first-child{margin-top:0}
+  .info-text p{margin:0 0 10px}
+  .modal footer.mfoot{
+    margin:0;display:flex;gap:10px;justify-content:flex-end;
+    padding:14px 20px;border-top:1px solid var(--line);background:#fbfaf8;
+  }
+  .copied{font-size:12.5px;color:var(--red);align-self:center;margin-right:auto;opacity:0;transition:opacity .2s}
+  .copied.show{opacity:1}
+
+  @media (max-width:520px){
+    .dates{flex-direction:column;gap:18px}
+    .info-btn{position:static;display:inline-block;margin-top:10px}
+    .head h1{padding-right:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <p class="eyebrow">Võlaõigusseadus · § 94 / § 113</p>
+    <h1>Intressi- ja viivisekalkulaator</h1>
+    <button class="info-btn" id="infoBtn" type="button">Info</button>
+    <hr class="rule">
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-interest" role="tab" aria-selected="true" type="button">Intressikalkulaator</button>
+      <button class="tab" id="tab-viivis"   role="tab" aria-selected="false" type="button">Viivisekalkulaator</button>
+    </div>
+
+    <div class="body">
+      <div class="field">
+        <label class="lbl" for="amount">Summa</label>
+        <div class="amount-wrap">
+          <input type="text" id="amount" inputmode="decimal" autocomplete="off"
+                 placeholder="Sisesta summa" spellcheck="false">
+          <span class="eur">€</span>
+        </div>
+      </div>
+
+      <div class="dates">
+        <div class="field">
+          <label class="lbl" for="startDate">Alguskuupäev</label>
+          <input type="date" id="startDate" autocomplete="off" min="2004-01-01">
+          <p class="hint">Vali võlgnevuse alguskuupäev</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="endDate">Lõppkuupäev</label>
+          <input type="date" id="endDate" autocomplete="off" min="2004-01-01">
+          <p class="hint">Vali võlgnevuse lõppkuupäev</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="act btn-primary" id="calcBtn" type="button">Arvuta</button>
+        <button class="act btn-ghost" id="clearBtn" type="button">Tühjenda kõik väljad</button>
+        <button class="act btn-ghost" id="reportBtn" type="button" disabled>Koosta raport</button>
+      </div>
+
+      <div class="error" id="error"></div>
+
+      <div class="result" id="result">
+        <div class="rlabel" id="resultLabel">Intress</div>
+        <div class="figure" id="resultFigure">—</div>
+        <div class="sub">
+          <div>Päevi<b id="resultDays">—</b></div>
+          <div>Kokku võlgnevus<b id="resultTotal">—</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Copyright 2026, Ott Saame<br>
+    <a href="mailto:ott.saame@concordia.ee">ott.saame@concordia.ee</a>
+  </footer>
+</div>
+
+<!-- Report modal -->
+<div class="backdrop" id="reportModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <header>
+      <h2 id="reportTitle">Raport</h2>
+      <button class="x" id="reportX" type="button" aria-label="Sulge">×</button>
+    </header>
+    <div class="content">
+      <div class="report-box" id="reportBox" tabindex="0"></div>
+    </div>
+    <footer class="mfoot">
+      <span class="copied" id="copied">Kopeeritud</span>
+      <button class="act btn-ghost" id="copyBtn" type="button">Kopeeri</button>
+      <button class="act btn-ghost" id="saveBtn" type="button">Salvesta</button>
+      <button class="act btn-primary" id="reportClose" type="button">Sulge</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Info modal -->
+<div class="backdrop" id="infoModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <header>
+      <h2 id="infoTitle">Info</h2>
+      <button class="x" id="infoX" type="button" aria-label="Sulge">×</button>
+    </header>
+    <div class="content">
+      <div class="info-text">
+        <h3>Milleks see kalkulaator?</h3>
+        <p>See kalkulaator arvutab võlaõigusseaduse (VÕS) järgset seadusjärgset intressi (§ 94)
+           ja viivist (§ 113). Sisesta võlgnetav summa ning periood, mille eest intress või viivis
+           arvutatakse — kalkulaator jagab perioodi intressimäära muutumise piiridel ja koostab
+           läbipaistva, kohtusse esitatava arvutuskäigu.</p>
+        <p>Baasintressimäärad põhinevad Eesti Panga avaldatud poolaastastel määradel. Toetatud
+           periood algab 01.01.2004.</p>
+
+        <h3>Küpsised ja andmetöötlus</h3>
+        <p>See leht <strong>ei kasuta küpsiseid</strong> ega jälgi kasutajat. Sisestatud summasid
+           ja kuupäevi ei salvestata ega edastata kuhugi — need püsivad ainult brauseri mälus ja
+           kustuvad lehe sulgemisel. Isikuandmeid ei koguta ega töödelda.</p>
+        <p>Arvutused tehakse täielikult sinu seadmes. Serveripoolset töötlust ei toimu.</p>
+
+        <h3>Vastutus</h3>
+        <p>Kalkulaator on abivahend. Lõpliku õigusliku hinnangu — sealhulgas võlgnevuse alguse ja
+           lõpu kuupäevade valiku — annab kasutaja ise.</p>
+      </div>
+    </div>
+    <footer class="mfoot">
+      <button class="act btn-primary" id="infoClose" type="button">Sulge</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   § 94 base rates — verified 25.07.2026 (eestipank.ee/volasuhete-intressimaar).
+   Each entry applies from `from` until the next entry's `from` (exclusive).
+   TWICE-A-YEAR UPDATE: add the new { from: "YYYY-01-01"|"YYYY-07-01", pct: X.XX }
+   line at the end, then redeploy. Only the § 94 base rate is entered here;
+   the viivis add-on (7%/8%) is fixed by law and never changes on schedule.
+   ============================================================ */
+const BASE_RATES = [
+  { from: "2004-01-01", pct: 2.00 }, { from: "2004-07-01", pct: 2.00 },
+  { from: "2005-01-01", pct: 2.00 }, { from: "2005-07-01", pct: 2.00 },
+  { from: "2006-01-01", pct: 2.25 }, { from: "2006-07-01", pct: 2.75 },
+  { from: "2007-01-01", pct: 3.50 }, { from: "2007-07-01", pct: 4.00 },
+  { from: "2008-01-01", pct: 4.00 }, { from: "2008-07-01", pct: 4.00 },
+  { from: "2009-01-01", pct: 2.50 }, { from: "2009-07-01", pct: 1.00 },
+  { from: "2010-01-01", pct: 1.00 }, { from: "2010-07-01", pct: 1.00 },
+  { from: "2011-01-01", pct: 1.00 }, { from: "2011-07-01", pct: 1.25 },
+  { from: "2012-01-01", pct: 1.00 }, { from: "2012-07-01", pct: 1.00 },
+  { from: "2013-01-01", pct: 0.75 }, { from: "2013-07-01", pct: 0.50 },
+  { from: "2014-01-01", pct: 0.25 }, { from: "2014-07-01", pct: 0.15 },
+  { from: "2015-01-01", pct: 0.05 }, { from: "2015-07-01", pct: 0.05 },
+  { from: "2016-01-01", pct: 0.05 }, { from: "2016-07-01", pct: 0.00 },
+  { from: "2017-01-01", pct: 0.00 }, { from: "2017-07-01", pct: 0.00 },
+  { from: "2018-01-01", pct: 0.00 }, { from: "2018-07-01", pct: 0.00 },
+  { from: "2019-01-01", pct: 0.00 }, { from: "2019-07-01", pct: 0.00 },
+  { from: "2020-01-01", pct: 0.00 }, { from: "2020-07-01", pct: 0.00 },
+  { from: "2021-01-01", pct: 0.00 }, { from: "2021-07-01", pct: 0.00 },
+  { from: "2022-01-01", pct: 0.00 }, { from: "2022-07-01", pct: 0.00 },
+  { from: "2023-01-01", pct: 2.50 }, { from: "2023-07-01", pct: 4.00 },
+  { from: "2024-01-01", pct: 4.50 }, { from: "2024-07-01", pct: 4.25 },
+  { from: "2025-01-01", pct: 3.15 }, { from: "2025-07-01", pct: 2.15 },
+  { from: "2026-01-01", pct: 2.15 }, { from: "2026-07-01", pct: 2.40 },
+];
+
+const FLOOR_ISO = "2004-01-01";
+const ADDON_SWITCH_ISO = "2013-04-15";
+
+/* ---- calendar helpers (UTC serial-day arithmetic; no timezone drift) ---- */
+const MS = 86400000;
+function serial(iso){ const [y,m,d]=iso.split("-").map(Number); return Math.floor(Date.UTC(y,m-1,d)/MS); }
+function toParts(s){ const dt=new Date(s*MS); return {y:dt.getUTCFullYear(),m:dt.getUTCMonth()+1,d:dt.getUTCDate()}; }
+function isLeap(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+function daysInYear(y){ return isLeap(y)?366:365; }
+function fmtDate(s){ const p=toParts(s); const z=n=>String(n).padStart(2,"0"); return `${z(p.d)}.${z(p.m)}.${p.y}`; }
+
+const FLOOR_S = serial(FLOOR_ISO);
+const SWITCH_S = serial(ADDON_SWITCH_ISO);
+
+function horizonSerial(){
+  const last = BASE_RATES[BASE_RATES.length-1];
+  const p = toParts(serial(last.from));
+  return p.m <= 6 ? serial(`${p.y}-07-01`) : serial(`${p.y+1}-01-01`);
+}
+function rateAt(s){ let f=null; for(const e of BASE_RATES){ if(serial(e.from)<=s) f=e; else break; } return f; }
+function addonPct(s){ return s < SWITCH_S ? 7 : 8; }
+
+/* ---- rounding: half-up, FP-noise-guarded (positive money) ---- */
+function roundN(x,n){ const f=Math.pow(10,n); return Math.round(x*f + 1e-6)/f; }
+const round2=x=>roundN(x,2), round4=x=>roundN(x,4), round6=x=>roundN(x,6);
+
+/* ---- core engine (identical to the Node-tested version) ---- */
+function calculate({principal,startISO,endISO,mode}){
+  const startS=serial(startISO), endS=serial(endISO);
+  if(!(principal>0)||!isFinite(principal)) return {ok:false,error:"AMOUNT"};
+  if(endS<startS) return {ok:false,error:"END_BEFORE_START"};
+  if(startS<FLOOR_S) return {ok:false,error:"BEFORE_FLOOR"};
+  const HORIZON=horizonSerial();
+  if(endS>=HORIZON) return {ok:false,error:"NO_RATE",from:fmtDate(HORIZON)};
+
+  const cutSet=new Set();
+  for(const e of BASE_RATES){ const b=serial(e.from); if(b>startS&&b<=endS) cutSet.add(b); }
+  if(mode==="viivis" && SWITCH_S>startS && SWITCH_S<=endS) cutSet.add(SWITCH_S);
+  const starts=[startS,...[...cutSet].sort((a,b)=>a-b)];
+
+  const segments=[];
+  for(let i=0;i<starts.length;i++){
+    const segStart=starts[i];
+    const segEnd = i<starts.length-1 ? starts[i+1]-1 : endS;
+    const days = segEnd-segStart+1;
+    const re=rateAt(segStart);
+    if(!re) return {ok:false,error:"NO_RATE",from:fmtDate(segStart)};
+    const basePct=re.pct;
+    const addon = mode==="viivis" ? addonPct(segStart) : 0;
+    const effPct = basePct+addon;
+    const year=toParts(segStart).y, diy=daysInYear(year);
+    const dailyExact = principal*(effPct/100)/diy;
+    const dailyAmount4 = round4(dailyExact);
+    const periodSum4 = round4(dailyAmount4*days);
+    const dailyRatePct6 = round6(effPct/diy);
+    segments.push({startISO:fmtDate(segStart),endISO:fmtDate(segEnd),startS:segStart,endS:segEnd,
+                   days,year,diy,basePct,addon,effPct,dailyRatePct6,dailyAmount4,periodSum4});
+  }
+
+  const N=endS-startS+1;
+  const sumDays=segments.reduce((a,s)=>a+s.days,0);
+  if(sumDays!==N) return {ok:false,error:"INTERNAL",detail:`day sum ${sumDays}!=${N}`};
+  for(let i=1;i<segments.length;i++)
+    if(segments[i].startS!==segments[i-1].endS+1) return {ok:false,error:"INTERNAL",detail:"gap/overlap"};
+
+  const totalInterest4=round4(segments.reduce((a,s)=>a+s.periodSum4,0));
+  const totalInterest=round2(totalInterest4);
+  const totalDebt=round2(principal+totalInterest);
+  return {ok:true,segments,totals:{days:N,totalInterest,totalDebt},
+          meta:{mode,principal,startISO:fmtDate(startS),endISO:fmtDate(endS),single:segments.length===1}};
+}
+
+/* ---- Estonian number formatting ---- */
+function fmtMoney(v,dp){
+  const s=Math.abs(v).toFixed(dp);
+  let [int,frac]=s.split(".");
+  int=int.replace(/\B(?=(\d{3})+(?!\d))/g,"\u00A0");
+  const body = dp>0 ? int+","+frac : int;
+  return (v<0?"-":"")+body+"\u00A0€";
+}
+function fmtPct(v,dp){ return v.toFixed(dp).replace(".",",")+"%"; }
+
+function parseAmount(raw){
+  if(raw==null) return NaN;
+  let s=String(raw).replace(/[\s\u00A0€]/g,"");
+  if(s.indexOf(",")!==-1) s=s.replace(/\./g,"").replace(",",".");
+  if(s==="") return NaN;
+  return parseFloat(s);
+}
+
+/* ---- report text ---- */
+function buildReport(res){
+  const isV = res.meta.mode==="viivis";
+  const W=25;
+  const L=(label,val)=>label.padEnd(W)+val;
+  const SEP="=".repeat(48);
+  const THIN="-".repeat(48);
+  const rateYearLbl = isV?"Viivisemäär aastas:":"Intressimäär aastas:";
+  const rateDayLbl  = isV?"Viivisemäär päevas:":"Intressimäär päevas:";
+  const amtDayLbl   = isV?"Viivisesumma päevas:":"Intressisumma päevas:";
+  const amtPerLbl   = isV?"Viivisesumma perioodis:":"Intressisumma perioodis:";
+  const totLbl      = isV?"Kokku viivis:":"Kokku intress:";
+  const rateYearVal = s => isV
+    ? `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)`
+    : `${fmtPct(s.effPct,2)}`;
+
+  const out=[];
+  out.push(isV?"VIIVISERAPORT":"INTRESSIRAPORT");
+  out.push(SEP);
+  out.push("");
+  out.push(L("Võlgnetav summa:", fmtMoney(res.meta.principal,2)));
+  out.push(L("Võla alguskuupäev:", res.meta.startISO));
+  out.push(L("Lõppkuupäev:", res.meta.endISO));
+  out.push("");
+
+  if(res.meta.single){
+    const s=res.segments[0];
+    out.push(L(rateYearLbl, rateYearVal(s)));
+    out.push(L(rateDayLbl, fmtPct(s.dailyRatePct6,6)));
+    out.push(L(amtDayLbl, fmtMoney(s.dailyAmount4,4)));
+    out.push(L("Päevi:", String(s.days)));
+    out.push("");
+    out.push(L(totLbl, fmtMoney(res.totals.totalInterest,2)));
+    out.push(L("Kokku võlgnevus:", fmtMoney(res.totals.totalDebt,2)));
+  } else {
+    res.segments.forEach((s,i)=>{
+      out.push(`Periood: ${s.startISO} \u2013 ${s.endISO}`);
+      out.push(L(rateYearLbl, rateYearVal(s)));
+      out.push(L(rateDayLbl, fmtPct(s.dailyRatePct6,6)));
+      out.push(L(amtDayLbl, fmtMoney(s.dailyAmount4,4)));
+      out.push(L("Päevi perioodis:", String(s.days)));
+      out.push(L(amtPerLbl, fmtMoney(s.periodSum4,4)));
+      if(i<res.segments.length-1) out.push("");
+    });
+    out.push("");
+    out.push(L("Päevi kokku:", String(res.totals.days)));
+    out.push(L(totLbl, fmtMoney(res.totals.totalInterest,2)));
+    out.push(L("Kokku võlgnevus:", fmtMoney(res.totals.totalDebt,2)));
+  }
+
+  out.push("");
+  out.push(THIN);
+  if(isV){
+    out.push("Arvutuse alus: VÕS \u00A7 113 (viivis) \u2014 baasintressimäär + viivise lisa");
+    out.push("(7% kuni 14.04.2013, 8% alates 15.04.2013).");
+  } else {
+    out.push("Arvutuse alus: VÕS \u00A7 94 \u2014 baasintressimäär");
+    out.push("(Eesti Panga poolaastane intressimäär).");
+  }
+  out.push("Päevade arvestus: tegelik/tegelik. Algus- ja lõppkuupäev on");
+  out.push("mõlemad arvestusse kaasatud.");
+  return out.join("\n");
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+(function(){
+  const $ = id => document.getElementById(id);
+  let mode = "interest";
+  let lastResult = null;
+
+  const els = {
+    tabI:$("tab-interest"), tabV:$("tab-viivis"),
+    amount:$("amount"), start:$("startDate"), end:$("endDate"),
+    calc:$("calcBtn"), clear:$("clearBtn"), report:$("reportBtn"),
+    error:$("error"), result:$("result"),
+    rLabel:$("resultLabel"), rFig:$("resultFigure"), rDays:$("resultDays"), rTotal:$("resultTotal"),
+    banner:$("banner"),
+    reportModal:$("reportModal"), reportBox:$("reportBox"), reportTitle:$("reportTitle"),
+    copyBtn:$("copyBtn"), saveBtn:$("saveBtn"), copied:$("copied"),
+    infoModal:$("infoModal"),
+  };
+
+  const ERRORS = {
+    AMOUNT:"Palun sisesta korrektne summa.",
+    NO_START:"Palun vali alguskuupäev.",
+    NO_END:"Palun vali lõppkuupäev.",
+    END_BEFORE_START:"Lõppkuupäev ei saa olla enne alguskuupäeva.",
+    BEFORE_FLOOR:"Kalkulaator ei arvuta võlgnevusi, mis on tekkinud enne 01.01.2004.",
+    NO_RATE: from => `Puudub kehtiv intressimäär alates ${from}. Palun võtke ühendust arendajaga.`,
+    INTERNAL:"Sisemine arvutusviga. Palun võtke ühendust arendajaga.",
+  };
+
+  function showError(msg){ els.error.textContent=msg; els.error.classList.add("show"); }
+  function clearError(){ els.error.classList.remove("show"); els.error.textContent=""; }
+  function hideResult(){ els.result.classList.remove("show"); lastResult=null; els.report.disabled=true; }
+
+  function setMode(m){
+    mode=m;
+    const isI = m==="interest";
+    els.tabI.setAttribute("aria-selected",String(isI));
+    els.tabV.setAttribute("aria-selected",String(!isI));
+    els.rLabel.textContent = isI ? "Intress" : "Viivis";
+    // switching tabs keeps inputs, clears the (now mode-mismatched) result
+    clearError(); hideResult();
+  }
+
+  function runCalc(){
+    clearError();
+    const principal = parseAmount(els.amount.value);
+    if(!(principal>0)||!isFinite(principal)){ hideResult(); showError(ERRORS.AMOUNT); return; }
+    if(!els.start.value){ hideResult(); showError(ERRORS.NO_START); return; }
+    if(!els.end.value){ hideResult(); showError(ERRORS.NO_END); return; }
+
+    const res = calculate({principal, startISO:els.start.value, endISO:els.end.value, mode});
+    if(!res.ok){
+      hideResult();
+      if(res.error==="NO_RATE") showError(ERRORS.NO_RATE(res.from));
+      else showError(ERRORS[res.error] || ERRORS.INTERNAL);
+      return;
+    }
+    lastResult = res;
+    els.rFig.textContent = fmtMoney(res.totals.totalInterest,2);
+    els.rDays.textContent = String(res.totals.days);
+    els.rTotal.textContent = fmtMoney(res.totals.totalDebt,2);
+    els.result.classList.add("show");
+    els.report.disabled = false;
+  }
+
+  function clearAll(){
+    els.amount.value=""; els.start.value=""; els.end.value="";
+    clearError(); hideResult(); els.amount.focus();
+  }
+
+  /* modal helpers */
+  function openModal(m){ m.classList.add("show"); }
+  function closeModal(m){ m.classList.remove("show"); }
+
+  function openReport(){
+    if(!lastResult) return;
+    const isV = lastResult.meta.mode==="viivis";
+    els.reportTitle.textContent = isV ? "Viiviseraport" : "Intressiraport";
+    els.reportBox.textContent = buildReport(lastResult);
+    openModal(els.reportModal);
+    els.reportBox.focus();
+  }
+
+  function copyReport(){
+    const text = els.reportBox.textContent;
+    const done = ()=>{ els.copied.classList.add("show"); setTimeout(()=>els.copied.classList.remove("show"),1600); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+    } else fallbackCopy();
+    function fallbackCopy(){
+      const ta=document.createElement("textarea"); ta.value=text;
+      ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta);
+    }
+  }
+
+  function saveReport(){
+    const isV = lastResult && lastResult.meta.mode==="viivis";
+    const blob = new Blob([els.reportBox.textContent], {type:"text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download = isV ? "viiviseraport.txt" : "intressiraport.txt";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),0);
+  }
+
+  /* gap reminder banner */
+  function checkGap(){
+    const now=new Date();
+    const todayS = serial(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`);
+    const H = horizonSerial();
+    if(todayS >= H){
+      els.banner.textContent = `Tähelepanu: intressimäärade tabel vajab uuendamist alates ${fmtDate(H)}. Enne seda kuupäeva lõppevad arvutused töötavad edasi.`;
+      els.banner.classList.add("show");
+    }
+  }
+
+  /* wiring */
+  els.tabI.addEventListener("click",()=>setMode("interest"));
+  els.tabV.addEventListener("click",()=>setMode("viivis"));
+  els.calc.addEventListener("click",runCalc);
+  els.clear.addEventListener("click",clearAll);
+  els.report.addEventListener("click",openReport);
+  els.amount.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+  els.start.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+  els.end.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+
+  $("infoBtn").addEventListener("click",()=>openModal(els.infoModal));
+  $("infoX").addEventListener("click",()=>closeModal(els.infoModal));
+  $("infoClose").addEventListener("click",()=>closeModal(els.infoModal));
+  $("reportX").addEventListener("click",()=>closeModal(els.reportModal));
+  $("reportClose").addEventListener("click",()=>closeModal(els.reportModal));
+  els.copyBtn.addEventListener("click",copyReport);
+  els.saveBtn.addEventListener("click",saveReport);
+
+  // click backdrop to close
+  [els.reportModal,els.infoModal].forEach(m=>{
+    m.addEventListener("mousedown",e=>{ if(e.target===m) closeModal(m); });
+  });
+  // Escape closes whichever is open
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){ closeModal(els.reportModal); closeModal(els.infoModal); }
+  });
+
+  // start clean on every load (no restored session)
+  clearAll();
+  els.amount.value=""; // ensure blank even if browser tried to restore
+  checkGap();
+})();
+</script>
+</body>
+</html>
