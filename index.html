@@ -100,6 +100,41 @@
   .dates{display:flex;gap:14px}
   .dates .field{flex:1;margin-bottom:0}
 
+  /* ---- basis selector ---- */
+  .basis{display:flex;gap:20px;margin-top:2px}
+  .basis label,.unit label{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink);cursor:pointer;font-weight:500}
+  .basis input[type="radio"],.unit input[type="radio"]{accent-color:var(--red);width:16px;height:16px;cursor:pointer;margin:0}
+  .unit{gap:20px;margin-top:12px;display:none}
+  .unit.show{display:flex}
+  .annual-equiv{display:none;margin-top:8px;font-size:12.5px;color:var(--red-dark)}
+  .annual-equiv.show{display:block}
+
+  /* ---- payments ---- */
+  .payments{display:none}
+  .payments.show{display:block}
+  .payment-row{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+  .payment-row input[type="date"]{flex:1.2;min-width:0}
+  .pay-amt-wrap{position:relative;flex:1;min-width:0}
+  .pay-amt-wrap input{width:100%}
+  .pay-amt-wrap .eur{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+  .pay-remove{flex:0 0 auto;width:34px;height:34px;border:1px solid var(--line);background:#fff;color:var(--muted);
+    border-radius:6px;cursor:pointer;font-size:18px;line-height:1;padding:0}
+  .pay-remove:hover{border-color:var(--red);color:var(--red);background:var(--red-wash)}
+  .btn-add{margin-top:2px;font-size:13.5px;padding:8px 14px}
+  .alloc{margin-top:16px;display:none}
+  .alloc.show{display:block}
+  .alloc .basis{flex-direction:column;gap:9px}
+  .payoff-note{display:none;margin:12px 0 0;padding:10px 13px;border-radius:6px;
+    background:var(--red-wash);border:1px solid #e7c9c9;border-left:3px solid var(--red);
+    font-size:13.5px;color:var(--red-dark);font-weight:600}
+  .payoff-note.show{display:block}
+  .contract-rate{margin-top:14px;display:none}
+  .contract-rate.show{display:block}
+  .c365{margin-top:12px;display:none}
+  .c365.show{display:block}
+  .c365 label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);cursor:pointer;font-weight:500}
+  .c365 input[type="checkbox"]{accent-color:var(--red);width:16px;height:16px;cursor:pointer;margin:0}
+
   /* ---- buttons ---- */
   .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
   button.act{
@@ -210,6 +245,30 @@
         </div>
       </div>
 
+      <div class="field">
+        <label class="lbl">Arvestuse alus</label>
+        <div class="basis" role="radiogroup" aria-label="Arvestuse alus">
+          <label><input type="radio" name="basis" value="statutory" checked> Seadusjärgne</label>
+          <label><input type="radio" name="basis" value="contractual"> Lepingujärgne</label>
+        </div>
+        <div class="field contract-rate" id="contractRateWrap">
+          <label class="lbl" for="contractRate" id="contractRateLbl">Intressimäär (% aastas)</label>
+          <div class="unit" id="contractUnitWrap" role="radiogroup" aria-label="Määra ühik">
+            <label><input type="radio" name="rateUnit" value="annual" checked> % aastas</label>
+            <label><input type="radio" name="rateUnit" value="daily"> % päevas</label>
+          </div>
+          <div class="amount-wrap">
+            <input type="text" id="contractRate" inputmode="decimal" autocomplete="off"
+                   placeholder="Sisesta intressimäär" spellcheck="false">
+            <span class="eur">%</span>
+          </div>
+          <p class="annual-equiv" id="annualEquiv"></p>
+        </div>
+        <div class="c365" id="contract365Wrap">
+          <label><input type="checkbox" id="force365"> Kasuta 365-päevast aastat</label>
+        </div>
+      </div>
+
       <div class="dates">
         <div class="field">
           <label class="lbl" for="startDate">Alguskuupäev</label>
@@ -220,6 +279,19 @@
           <label class="lbl" for="endDate">Lõppkuupäev</label>
           <input type="date" id="endDate" autocomplete="off" min="2004-01-01">
           <p class="hint">Vali võlgnevuse lõppkuupäev</p>
+        </div>
+      </div>
+
+      <div class="field payments" id="paymentsWrap">
+        <label class="lbl">Maksed</label>
+        <div id="paymentRows"></div>
+        <button class="act btn-ghost btn-add" id="addPayment" type="button">+ Lisa makse</button>
+        <div class="alloc" id="allocWrap">
+          <label class="lbl">Maksete arvestamise järjekord</label>
+          <div class="basis" role="radiogroup" aria-label="Maksete arvestamise järjekord">
+            <label><input type="radio" name="alloc" value="statutory" checked> Seadusjärgne (viivis enne põhivõlga)</label>
+            <label><input type="radio" name="alloc" value="reverse"> Vastupidine (põhivõlg enne viivist)</label>
+          </div>
         </div>
       </div>
 
@@ -234,9 +306,10 @@
       <div class="result" id="result">
         <div class="rlabel" id="resultLabel">Intress</div>
         <div class="figure" id="resultFigure">—</div>
+        <div class="payoff-note" id="payoffNote"></div>
         <div class="sub">
           <div>Päevi<b id="resultDays">—</b></div>
-          <div>Kokku võlgnevus<b id="resultTotal">—</b></div>
+          <div><span id="resultTotalLbl">Kokku võlgnevus</span><b id="resultTotal">—</b></div>
         </div>
       </div>
     </div>
@@ -361,17 +434,37 @@ function roundN(x,n){ const f=Math.pow(10,n); return Math.round(x*f + 1e-6)/f; }
 const round2=x=>roundN(x,2), round4=x=>roundN(x,4), round6=x=>roundN(x,6);
 
 /* ---- core engine (identical to the Node-tested version) ---- */
-function calculate({principal,startISO,endISO,mode}){
+function calculate({principal,startISO,endISO,mode,basis="statutory",contractRatePct=null,force365=false,rateUnit="annual"}){
   const startS=serial(startISO), endS=serial(endISO);
+  const contractual = basis==="contractual";
+  // Forced 365-day year: contractual interest only. Segmentation still splits at 1 Jan.
+  const use365 = contractual && mode==="interest" && !!force365;
+  // Per-day rate: contractual viivis only. No denominator, so NO 1-Jan split — one period.
+  const perDay = contractual && mode==="viivis" && rateUnit==="daily";
   if(!(principal>0)||!isFinite(principal)) return {ok:false,error:"AMOUNT"};
   if(endS<startS) return {ok:false,error:"END_BEFORE_START"};
-  if(startS<FLOOR_S) return {ok:false,error:"BEFORE_FLOOR"};
-  const HORIZON=horizonSerial();
-  if(endS>=HORIZON) return {ok:false,error:"NO_RATE",from:fmtDate(HORIZON)};
+  if(startS<FLOOR_S) return {ok:false,error:"BEFORE_FLOOR"};   // same 01.01.2004 floor for whole calculator
 
+  if(contractual){
+    if(!(contractRatePct>=0)||!isFinite(contractRatePct)) return {ok:false,error:"RATE"};
+  } else {
+    const HORIZON=horizonSerial();                             // ECB-table horizon: statutory only
+    if(endS>=HORIZON) return {ok:false,error:"NO_RATE",from:fmtDate(HORIZON)};
+  }
+
+  // Cut set: statutory splits at every ECB entry (1 Jan/1 Jul) + (viivis) 15.04.2013.
+  // Contractual splits at every 1 Jan only — a flat rate still splits at the year
+  // boundary for the right 365/366 denominator, shown even between equal-length years.
   const cutSet=new Set();
-  for(const e of BASE_RATES){ const b=serial(e.from); if(b>startS&&b<=endS) cutSet.add(b); }
-  if(mode==="viivis" && SWITCH_S>startS && SWITCH_S<=endS) cutSet.add(SWITCH_S);
+  if(contractual){
+    if(!perDay){                                                // per-day: no denominator -> one continuous period
+      const y0=toParts(startS).y, y1=toParts(endS).y;
+      for(let y=y0+1;y<=y1;y++){ const b=serial(`${y}-01-01`); if(b>startS&&b<=endS) cutSet.add(b); }
+    }
+  } else {
+    for(const e of BASE_RATES){ const b=serial(e.from); if(b>startS&&b<=endS) cutSet.add(b); }
+    if(mode==="viivis" && SWITCH_S>startS && SWITCH_S<=endS) cutSet.add(SWITCH_S);
+  }
   const starts=[startS,...[...cutSet].sort((a,b)=>a-b)];
 
   const segments=[];
@@ -379,16 +472,27 @@ function calculate({principal,startISO,endISO,mode}){
     const segStart=starts[i];
     const segEnd = i<starts.length-1 ? starts[i+1]-1 : endS;
     const days = segEnd-segStart+1;
-    const re=rateAt(segStart);
-    if(!re) return {ok:false,error:"NO_RATE",from:fmtDate(segStart)};
-    const basePct=re.pct;
-    const addon = mode==="viivis" ? addonPct(segStart) : 0;
-    const effPct = basePct+addon;
-    const year=toParts(segStart).y, diy=daysInYear(year);
-    const dailyExact = principal*(effPct/100)/diy;
+    const year=toParts(segStart).y, diy=use365?365:daysInYear(year);
+    let basePct=null, addon=0, effPct, dailyExact, dailyRatePct6;
+    if(perDay){
+      effPct = contractRatePct*365;                             // annual equivalent (arvutuslik, /365)
+      dailyRatePct6 = round6(contractRatePct);                  // entered day rate
+      dailyExact = principal*(contractRatePct/100);
+    } else if(contractual){
+      effPct = contractRatePct;                                 // flat annual, replaces base + add-on
+      dailyRatePct6 = round6(effPct/diy);
+      dailyExact = principal*(effPct/100)/diy;
+    } else {
+      const re=rateAt(segStart);
+      if(!re) return {ok:false,error:"NO_RATE",from:fmtDate(segStart)};
+      basePct=re.pct;
+      addon = mode==="viivis" ? addonPct(segStart) : 0;
+      effPct = basePct+addon;
+      dailyRatePct6 = round6(effPct/diy);
+      dailyExact = principal*(effPct/100)/diy;
+    }
     const dailyAmount4 = round4(dailyExact);
     const periodSum4 = round4(dailyAmount4*days);
-    const dailyRatePct6 = round6(effPct/diy);
     segments.push({startISO:fmtDate(segStart),endISO:fmtDate(segEnd),startS:segStart,endS:segEnd,
                    days,year,diy,basePct,addon,effPct,dailyRatePct6,dailyAmount4,periodSum4});
   }
@@ -403,18 +507,169 @@ function calculate({principal,startISO,endISO,mode}){
   const totalInterest=round2(totalInterest4);
   const totalDebt=round2(principal+totalInterest);
   return {ok:true,segments,totals:{days:N,totalInterest,totalDebt},
-          meta:{mode,principal,startISO:fmtDate(startS),endISO:fmtDate(endS),single:segments.length===1}};
+          meta:{mode,basis,contractRatePct,use365,perDay,rateUnit,principal,startISO:fmtDate(startS),endISO:fmtDate(endS),single:segments.length===1}};
+}
+
+/* ============================================================
+   PAYMENTS ENGINE (viivis only) — Step 4
+   Simulates partial payments with statutory or reverse allocation.
+   - viivis accrues on põhivõlg only (never on the unpaid-viivis bucket)
+   - payment day counted inclusive in the phase it closes; reduced
+     principal takes effect the next day
+   - accrued viivis crystallised to cents at each phase close (payment
+     date, or the end date for the final phase)
+   ============================================================ */
+function allocate(amount, unpaidViivis, principal, order){
+  let viivisPaid=0, principalPaid=0, rem=amount;
+  if(order==="reverse"){
+    principalPaid = Math.min(rem, principal); rem = round2(rem-principalPaid);
+    viivisPaid    = Math.min(rem, unpaidViivis); rem = round2(rem-viivisPaid);
+  } else {
+    viivisPaid    = Math.min(rem, unpaidViivis); rem = round2(rem-viivisPaid);
+    principalPaid = Math.min(rem, principal); rem = round2(rem-principalPaid);
+  }
+  return { viivisPaid: round2(viivisPaid), principalPaid: round2(principalPaid), leftover: round2(rem) };
+}
+
+function simulate({ principal, startISO, endISO, basis="statutory", contractRatePct=null, rateUnit="annual", payments=[], allocationOrder="statutory" }){
+  const mode = "viivis";
+  const startS = serial(startISO), endS = serial(endISO);
+  const contractual = basis==="contractual";
+  const perDay = contractual && rateUnit==="daily";
+
+  // ---- guards ----
+  if(!(principal>0)||!isFinite(principal)) return { ok:false, error:"AMOUNT" };
+  if(endS<startS) return { ok:false, error:"END_BEFORE_START" };
+  if(startS<FLOOR_S) return { ok:false, error:"BEFORE_FLOOR" };
+  if(contractual){
+    if(!(contractRatePct>=0)||!isFinite(contractRatePct)) return { ok:false, error:"RATE" };
+  } else {
+    const HORIZON=horizonSerial();
+    if(endS>=HORIZON) return { ok:false, error:"NO_RATE", from:fmtDate(HORIZON) };
+  }
+
+  // ---- validate + normalise payments ----
+  const byDate = new Map();
+  for(const p of payments){
+    const amt = p.amount;
+    if(!(amt>0)||!isFinite(amt)) return { ok:false, error:"PAYMENT_AMOUNT" };
+    const ps = serial(p.dateISO);
+    if(ps<=startS || ps>endS) return { ok:false, error:"PAYMENT_DATE", date:p.dateISO };
+    byDate.set(ps, round2((byDate.get(ps)||0)+amt));   // combine same-date payments
+  }
+  const paySerials = [...byDate.keys()].sort((a,b)=>a-b);
+  const paySet = new Set(paySerials);
+
+  // ---- cut set: rate boundaries + (payment date + 1) principal boundaries ----
+  const cutSet = new Set();
+  if(contractual){
+    if(!perDay){
+      const y0=toParts(startS).y, y1=toParts(endS).y;
+      for(let y=y0+1;y<=y1;y++){ const b=serial(`${y}-01-01`); if(b>startS&&b<=endS) cutSet.add(b); }
+    }
+  } else {
+    for(const e of BASE_RATES){ const b=serial(e.from); if(b>startS&&b<=endS) cutSet.add(b); }
+    if(SWITCH_S>startS && SWITCH_S<=endS) cutSet.add(SWITCH_S);
+  }
+  for(const ps of paySerials){ if(ps+1<=endS) cutSet.add(ps+1); }
+
+  const starts = [startS, ...[...cutSet].sort((a,b)=>a-b)];
+
+  // ---- walk segments, grouping into phases closed by payments ----
+  const segRate = (segStart, diy, P) => {
+    let basePct=null, addon=0, effPct, dailyRatePct6, dailyExact;
+    if(perDay){
+      effPct=contractRatePct*365; dailyRatePct6=round6(contractRatePct); dailyExact=P*(contractRatePct/100);
+    } else if(contractual){
+      effPct=contractRatePct; dailyRatePct6=round6(effPct/diy); dailyExact=P*(effPct/100)/diy;
+    } else {
+      const re=rateAt(segStart); basePct=re.pct; addon=addonPct(segStart); effPct=basePct+addon;
+      dailyRatePct6=round6(effPct/diy); dailyExact=P*(effPct/100)/diy;
+    }
+    return { basePct, addon, effPct, dailyRatePct6, dailyAmount4:round4(dailyExact) };
+  };
+
+  let curPrincipal = round2(principal);
+  let unpaidViivis = 0;
+  let phaseSegs = [], phaseViivis4 = 0;
+  const phases = [];
+  const allSegs = [];   // for invariant
+  let paidTotal=0, viivisPaidTotal=0, principalPaidTotal=0, surplus=0, payoff=null;
+
+  for(let i=0;i<starts.length;i++){
+    const segStart = starts[i];
+    const segEnd   = i<starts.length-1 ? starts[i+1]-1 : endS;
+    const days     = segEnd-segStart+1;
+    const year=toParts(segStart).y, diy=daysInYear(year);
+    const rc = segRate(segStart, diy, curPrincipal);
+    const segViivis4 = round4(rc.dailyAmount4*days);
+    const seg = { startISO:fmtDate(segStart), endISO:fmtDate(segEnd), startS:segStart, endS:segEnd,
+                  days, year, diy, basePct:rc.basePct, addon:rc.addon, effPct:rc.effPct,
+                  dailyRatePct6:rc.dailyRatePct6, dailyAmount4:rc.dailyAmount4, segViivis4 };
+    phaseSegs.push(seg); allSegs.push(seg);
+    phaseViivis4 = round4(phaseViivis4 + segViivis4);
+
+    if(paySet.has(segEnd)){
+      // close phase: crystallise, apply payment
+      const viivisDue = round2(phaseViivis4);
+      unpaidViivis = round2(unpaidViivis + viivisDue);
+      const amount = byDate.get(segEnd);
+      const a = allocate(amount, unpaidViivis, curPrincipal, allocationOrder);
+      unpaidViivis = round2(unpaidViivis - a.viivisPaid);
+      curPrincipal = round2(curPrincipal - a.principalPaid);
+      paidTotal = round2(paidTotal+amount);
+      viivisPaidTotal = round2(viivisPaidTotal+a.viivisPaid);
+      principalPaidTotal = round2(principalPaidTotal+a.principalPaid);
+      surplus = round2(surplus+a.leftover);
+      // principal that APPLIED during this phase = pre-payment principal
+      const phasePrincipal = round2(curPrincipal + a.principalPaid);
+      phases.push({ principal: phasePrincipal, segs: phaseSegs, viivisDue,
+                    payment: { dateISO:fmtDate(segEnd), amount, viivisPaid:a.viivisPaid, principalPaid:a.principalPaid,
+                               newPrincipal:curPrincipal, unpaidViivisAfter:unpaidViivis, leftover:a.leftover } });
+      if(!payoff && curPrincipal===0 && unpaidViivis===0) payoff = { dateISO:fmtDate(segEnd) };
+      phaseSegs = []; phaseViivis4 = 0;
+    }
+  }
+  // final phase (segments after the last payment, or the whole thing if no payments)
+  if(phaseSegs.length){
+    const viivisDue = round2(phaseViivis4);
+    unpaidViivis = round2(unpaidViivis + viivisDue);
+    phases.push({ principal: curPrincipal, segs: phaseSegs, viivisDue, payment:null });
+  }
+
+  // ---- invariant: days still partition [start,end] exactly, contiguous ----
+  const N = endS-startS+1;
+  const sumDays = allSegs.reduce((a,s)=>a+s.days,0);
+  if(sumDays!==N) return { ok:false, error:"INTERNAL", detail:`day sum ${sumDays}!=${N}` };
+  for(let i=1;i<allSegs.length;i++)
+    if(allSegs[i].startS!==allSegs[i-1].endS+1) return { ok:false, error:"INTERNAL", detail:"gap/overlap" };
+
+  const totalViivis = round2(phases.reduce((a,ph)=>a+ph.viivisDue,0));
+  const remainingPrincipal = round2(curPrincipal);
+  const remainingViivis = round2(unpaidViivis);
+  const remainingDebt = round2(remainingPrincipal+remainingViivis);
+  if(!payoff && remainingDebt===0 && phases.length) payoff = { dateISO: phases[phases.length-1].payment ? phases[phases.length-1].payment.dateISO : fmtDate(endS) };
+
+  return {
+    ok:true, phases, allSegs,
+    totals:{ days:N, totalViivis, paidTotal, viivisPaidTotal, principalPaidTotal, surplus,
+             remainingPrincipal, remainingViivis, remainingDebt },
+    payoff,
+    meta:{ mode, basis, contractRatePct, rateUnit, perDay, principal:round2(principal),
+           startISO:fmtDate(startS), endISO:fmtDate(endS), allocationOrder, paymentsCount:paySerials.length },
+  };
 }
 
 /* ---- Estonian number formatting ---- */
 function fmtMoney(v,dp){
   const s=Math.abs(v).toFixed(dp);
   let [int,frac]=s.split(".");
-  int=int.replace(/\B(?=(\d{3})+(?!\d))/g,"\u00A0");
+  if(int.length>=5) int=int.replace(/\B(?=(\d{3})+(?!\d))/g,"\u00A0");  // space only from 5 digits (12 981), not 1932
   const body = dp>0 ? int+","+frac : int;
   return (v<0?"-":"")+body+"\u00A0€";
 }
 function fmtPct(v,dp){ return v.toFixed(dp).replace(".",",")+"%"; }
+function fmtPctTrim(v){ return v.toFixed(6).replace(/0+$/,"").replace(/\.$/,"").replace(".",",")+"%"; }
 
 function parseAmount(raw){
   if(raw==null) return NaN;
@@ -427,6 +682,7 @@ function parseAmount(raw){
 /* ---- report text ---- */
 function buildReport(res){
   const isV = res.meta.mode==="viivis";
+  const contractual = res.meta.basis==="contractual";
   const W=25;
   const L=(label,val)=>label.padEnd(W)+val;
   const SEP="=".repeat(48);
@@ -436,9 +692,12 @@ function buildReport(res){
   const amtDayLbl   = isV?"Viivisesumma päevas:":"Intressisumma päevas:";
   const amtPerLbl   = isV?"Viivisesumma perioodis:":"Intressisumma perioodis:";
   const totLbl      = isV?"Kokku viivis:":"Kokku intress:";
-  const rateYearVal = s => isV
-    ? `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)`
-    : `${fmtPct(s.effPct,2)}`;
+  // statutory viivis shows the base + add-on breakdown; per-day shows an informational annual equivalent
+  const rateYearVal = s => {
+    if(res.meta.perDay) return `${fmtPct(s.effPct,2)} (arvutuslik, 365-päevase aasta alusel)`;
+    if(isV && !contractual) return `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)`;
+    return `${fmtPct(s.effPct,2)}`;
+  };
 
   const out=[];
   out.push(isV?"VIIVISERAPORT":"INTRESSIRAPORT");
@@ -476,15 +735,119 @@ function buildReport(res){
 
   out.push("");
   out.push(THIN);
-  if(isV){
+  if(contractual){
+    if(res.meta.perDay){
+      out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPctTrim(res.meta.contractRatePct)} päevas`);
+      out.push("(aastamäär arvutuslik, 365-päevase aasta alusel).");
+    } else {
+      out.push(`Arvutuse alus: lepingujärgne ${isV?"viivis":"intress"} ${fmtPct(res.meta.contractRatePct,2)} aastas.`);
+    }
+  } else if(isV){
     out.push("Arvutuse alus: VÕS \u00A7 113 (viivis) \u2014 baasintressimäär + viivise lisa");
     out.push("(7% kuni 14.04.2013, 8% alates 15.04.2013).");
   } else {
     out.push("Arvutuse alus: VÕS \u00A7 94 \u2014 baasintressimäär");
     out.push("(Eesti Panga poolaastane intressimäär).");
   }
-  out.push("Päevade arvestus: tegelik/tegelik. Algus- ja lõppkuupäev on");
-  out.push("mõlemad arvestusse kaasatud.");
+  if(res.meta.perDay){
+    out.push("Päevade arvestus: tegelik päevade arv.");
+    out.push("Algus- ja lõppkuupäev on mõlemad arvestusse kaasatud.");
+  } else if(res.meta.use365){
+    out.push("Päevade arvestus: tegelik/365 (365-päevane aasta).");
+    out.push("Algus- ja lõppkuupäev on mõlemad arvestusse kaasatud.");
+  } else {
+    out.push("Päevade arvestus: tegelik/tegelik. Algus- ja lõppkuupäev on");
+    out.push("mõlemad arvestusse kaasatud.");
+  }
+  return out.join("\n");
+}
+
+/* ---- payment ledger report (Option A) ---- */
+function buildPaymentReport(r){
+  const W=27, L=(l,v)=>l.padEnd(W)+v, SEP="=".repeat(52), THIN="-".repeat(52);
+  const m=r.meta, perDay=m.perDay, contractual=m.basis==="contractual";
+  const rateYearVal = s => perDay
+    ? `${fmtPct(s.effPct,2)} (arvutuslik, 365-päevase aasta alusel)`
+    : (!contractual ? `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)` : `${fmtPct(s.effPct,2)}`);
+  const out=[];
+  out.push("VIIVISERAPORT"); out.push(SEP); out.push("");
+  out.push(L("Võlgnetav summa (algne):", fmtMoney(m.principal,2)));
+  out.push(L("Võla alguskuupäev:", m.startISO));
+  out.push(L("Lõppkuupäev:", m.endISO));
+  out.push(L("Maksete järjekord:", m.allocationOrder==="reverse"?"põhivõlg enne viivist":"viivis enne põhivõlga"));
+  out.push("");
+  let suppressed=false;
+  r.phases.forEach((ph,idx)=>{
+    if(suppressed){
+      if(ph.payment && ph.payment.amount>0)
+        out.push(L(`Makse ${ph.payment.dateISO} (enammakse):`, fmtMoney(ph.payment.amount,2)));
+      return;
+    }
+    const f=ph.segs[0], l=ph.segs[ph.segs.length-1];
+    out.push(`--- Periood ${idx+1}: ${f.startISO} \u2013 ${l.endISO} ---`);
+    out.push(L("Põhivõlg:", fmtMoney(ph.principal,2)));
+    if(ph.segs.length===1){
+      const s=ph.segs[0];
+      out.push(L("Viivisemäär aastas:", rateYearVal(s)));
+      out.push(L("Viivisemäär päevas:", fmtPct(s.dailyRatePct6,6)));
+      out.push(L("Viivisesumma päevas:", fmtMoney(s.dailyAmount4,4)));
+      out.push(L("Päevi:", String(s.days)));
+      out.push(L("Viivis perioodis:", fmtMoney(ph.viivisDue,2)));
+    } else {
+      ph.segs.forEach(s=>{
+        out.push(`  ${s.startISO} \u2013 ${s.endISO}  (${s.days} p)`);
+        out.push(L("    Viivisemäär aastas:", rateYearVal(s)));
+        out.push(L("    Viivisemäär päevas:", fmtPct(s.dailyRatePct6,6)));
+        out.push(L("    Viivisesumma päevas:", fmtMoney(s.dailyAmount4,4)));
+        out.push(L("    Viivis:", fmtMoney(s.segViivis4,4)));
+      });
+      out.push(L("Viivis perioodis (kokku):", fmtMoney(ph.viivisDue,2)));
+    }
+    if(ph.payment){
+      const p=ph.payment;
+      out.push("");
+      out.push(L(`Makse ${p.dateISO}:`, fmtMoney(p.amount,2)));
+      out.push(L("  \u2192 viivis:", fmtMoney(p.viivisPaid,2)));
+      out.push(L("  \u2192 põhivõlg:", fmtMoney(p.principalPaid,2)));
+      if(p.leftover>0) out.push(L("  \u2192 enammakse:", fmtMoney(p.leftover,2)));
+      out.push(L("Uus põhivõlg:", fmtMoney(p.newPrincipal,2)));
+      out.push(L("Viivise jääk:", fmtMoney(p.unpaidViivisAfter,2)));
+    }
+    out.push("");
+    if(r.payoff && ph.payment && ph.payment.dateISO===r.payoff.dateISO && idx<r.phases.length-1){
+      out.push(`Edasist viivist ei arvestata (võlg tasutud ${r.payoff.dateISO}).`);
+      out.push("");
+      suppressed=true;
+    }
+  });
+  out.push(SEP);
+  if(r.payoff) out.push(`Võlg tasutud ${r.payoff.dateISO}.`);
+  out.push(L("Kokku viivis:", fmtMoney(r.totals.totalViivis,2)));
+  out.push(L("Makstud kokku:", fmtMoney(r.totals.paidTotal,2)));
+  out.push(L("  sh viivis:", fmtMoney(r.totals.viivisPaidTotal,2)));
+  out.push(L("  sh põhivõlg:", fmtMoney(r.totals.principalPaidTotal,2)));
+  if(r.totals.surplus>0) out.push(L("  sh enammakse:", fmtMoney(r.totals.surplus,2)));
+  out.push(L("Põhivõla jääk:", fmtMoney(r.totals.remainingPrincipal,2)));
+  out.push(L("Viivise jääk:", fmtMoney(r.totals.remainingViivis,2)));
+  out.push(L(`Jääk kokku (${m.endISO}):`, fmtMoney(r.totals.remainingDebt,2)));
+  out.push(""); out.push(THIN);
+  if(contractual){
+    if(perDay){
+      out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPctTrim(m.contractRatePct)} päevas`);
+      out.push("(aastamäär arvutuslik, 365-päevase aasta alusel).");
+    } else {
+      out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPct(m.contractRatePct,2)} aastas.`);
+    }
+  } else {
+    out.push("Arvutuse alus: VÕS \u00A7 113 (viivis) \u2014 baasintressimäär + viivise lisa");
+    out.push("(7% kuni 14.04.2013, 8% alates 15.04.2013).");
+  }
+  out.push(m.allocationOrder==="reverse"
+    ? "Maksete arvestus: põhivõlg enne viivist (lepingust tulenevalt)."
+    : "Maksete arvestus: VÕS \u00A7 88 lg 6 (viivis enne põhivõlga).");
+  out.push(perDay
+    ? "Päevade arvestus: tegelik päevade arv. Otspunktid kaasatud."
+    : "Päevade arvestus: tegelik/tegelik. Otspunktid kaasatud.");
   return out.join("\n");
 }
 
@@ -496,6 +859,13 @@ function buildReport(res){
   let mode = "interest";
   let lastResult = null;
 
+  // basis (seadus/leping) and contractual rate are remembered per tab;
+  // amount + dates are shared across tabs.
+  const tabState = {
+    interest: { basis:"statutory", rate:"", force365:false, unit:"annual" },
+    viivis:   { basis:"statutory", rate:"", force365:false, unit:"annual" },
+  };
+
   const els = {
     tabI:$("tab-interest"), tabV:$("tab-viivis"),
     amount:$("amount"), start:$("startDate"), end:$("endDate"),
@@ -506,7 +876,79 @@ function buildReport(res){
     reportModal:$("reportModal"), reportBox:$("reportBox"), reportTitle:$("reportTitle"),
     copyBtn:$("copyBtn"), saveBtn:$("saveBtn"), copied:$("copied"),
     infoModal:$("infoModal"),
+    contractWrap:$("contractRateWrap"), contractRate:$("contractRate"), contractLbl:$("contractRateLbl"),
+    c365Wrap:$("contract365Wrap"), force365:$("force365"),
+    unitWrap:$("contractUnitWrap"), annualEquiv:$("annualEquiv"),
+    paymentsWrap:$("paymentsWrap"), paymentRows:$("paymentRows"), addPayment:$("addPayment"),
+    allocWrap:$("allocWrap"), payoffNote:$("payoffNote"), resultTotalLbl:$("resultTotalLbl"),
   };
+  let lastKind = "plain";   // "plain" | "payments"
+
+  function currentBasis(){ const el=document.querySelector('input[name="basis"]:checked'); return el?el.value:"statutory"; }
+  function setBasisRadio(v){ const el=document.querySelector(`input[name="basis"][value="${v}"]`); if(el) el.checked=true; }
+  function currentUnit(){ const el=document.querySelector('input[name="rateUnit"]:checked'); return el?el.value:"annual"; }
+  function setUnitRadio(v){ const el=document.querySelector(`input[name="rateUnit"][value="${v}"]`); if(el) el.checked=true; }
+
+  function updateAnnualEquiv(){
+    const show = currentBasis()==="contractual" && mode==="viivis" && currentUnit()==="daily";
+    if(show){
+      const r = parseAmount(els.contractRate.value);
+      if(r>=0 && isFinite(r)){
+        els.annualEquiv.textContent = `\u2248 ${fmtPct(r*365,2)} aastas (365-päevase aasta alusel)`;
+        els.annualEquiv.classList.add("show");
+        return;
+      }
+    }
+    els.annualEquiv.classList.remove("show");
+  }
+
+  function updateContractVisibility(){
+    const c = currentBasis()==="contractual";
+    els.contractWrap.classList.toggle("show", c);
+    els.c365Wrap.classList.toggle("show", c && mode==="interest");   // 365-day: contractual interest only
+    els.unitWrap.classList.toggle("show", c && mode==="viivis");     // per-day toggle: contractual viivis only
+    updateAnnualEquiv();
+  }
+
+  // ---- payments (viivis only) ----
+  function updatePaymentsVisibility(){ els.paymentsWrap.classList.toggle("show", mode==="viivis"); }
+  function updateAllocVisibility(){ els.allocWrap.classList.toggle("show", els.paymentRows.children.length>0); }
+  function currentAlloc(){ const el=document.querySelector('input[name="alloc"]:checked'); return el?el.value:"statutory"; }
+
+  function addPaymentRow(date="", amount=""){
+    const row=document.createElement("div");
+    row.className="payment-row";
+    row.innerHTML =
+      '<input type="date" class="pay-date" autocomplete="off" min="2004-01-01">'+
+      '<span class="pay-amt-wrap"><input type="text" class="pay-amount" inputmode="decimal" autocomplete="off" placeholder="Summa" spellcheck="false"><span class="eur">€</span></span>'+
+      '<button type="button" class="pay-remove" aria-label="Eemalda makse">×</button>';
+    const dEl=row.querySelector(".pay-date"), aEl=row.querySelector(".pay-amount");
+    dEl.value=date; aEl.value=amount;
+    dEl.addEventListener("change",()=>{ clearError(); hideResult(); });
+    aEl.addEventListener("input",()=>{ clearError(); hideResult(); });
+    aEl.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+    row.querySelector(".pay-remove").addEventListener("click",()=>{ row.remove(); updateAllocVisibility(); clearError(); hideResult(); });
+    els.paymentRows.appendChild(row);
+    updateAllocVisibility();
+  }
+
+  // returns {payments:[...], incomplete:bool}
+  function collectPayments(){
+    const rows=[...els.paymentRows.children];
+    const payments=[]; let incomplete=false;
+    for(const row of rows){
+      const d=row.querySelector(".pay-date").value;
+      const a=row.querySelector(".pay-amount").value.trim();
+      if(!d && !a) continue;                       // empty row: ignore
+      if(!d || !a){ incomplete=true; continue; }   // half-filled: flag
+      payments.push({ dateISO:d, amount:parseAmount(a) });
+    }
+    return { payments, incomplete };
+  }
+  function updateContractLabels(m){
+    els.contractLbl.textContent = m==="interest" ? "Intressimäär (% aastas)" : "Viivisemäär";
+    els.contractRate.placeholder = m==="interest" ? "Sisesta intressimäär" : "Sisesta viivisemäär";
+  }
 
   const ERRORS = {
     AMOUNT:"Palun sisesta korrektne summa.",
@@ -515,20 +957,37 @@ function buildReport(res){
     END_BEFORE_START:"Lõppkuupäev ei saa olla enne alguskuupäeva.",
     BEFORE_FLOOR:"Kalkulaator ei arvuta võlgnevusi, mis on tekkinud enne 01.01.2004.",
     NO_RATE: from => `Puudub kehtiv intressimäär alates ${from}. Palun võtke ühendust arendajaga.`,
+    RATE_INTEREST:"Palun sisesta korrektne intressimäär.",
+    RATE_VIIVIS:"Palun sisesta korrektne viivisemäär.",
+    PAYMENT_INCOMPLETE:"Palun täida iga makse kuupäev ja summa (või eemalda tühi rida).",
+    PAYMENT_AMOUNT:"Palun sisesta korrektne makse summa.",
+    PAYMENT_DATE: d => `Makse kuupäev (${d}) peab olema pärast alguskuupäeva ja hiljemalt lõppkuupäev.`,
     INTERNAL:"Sisemine arvutusviga. Palun võtke ühendust arendajaga.",
   };
 
   function showError(msg){ els.error.textContent=msg; els.error.classList.add("show"); }
   function clearError(){ els.error.classList.remove("show"); els.error.textContent=""; }
-  function hideResult(){ els.result.classList.remove("show"); lastResult=null; els.report.disabled=true; }
+  function hideResult(){ els.result.classList.remove("show"); els.payoffNote.classList.remove("show"); lastResult=null; els.report.disabled=true; }
 
   function setMode(m){
+    if(m===mode) return;
+    // save the tab we're leaving
+    tabState[mode] = { basis: currentBasis(), rate: els.contractRate.value, force365: els.force365.checked, unit: currentUnit() };
     mode=m;
     const isI = m==="interest";
     els.tabI.setAttribute("aria-selected",String(isI));
     els.tabV.setAttribute("aria-selected",String(!isI));
     els.rLabel.textContent = isI ? "Intress" : "Viivis";
-    // switching tabs keeps inputs, clears the (now mode-mismatched) result
+    // restore the tab we're entering (amount + dates stay shared/untouched)
+    const st = tabState[m];
+    setBasisRadio(st.basis);
+    els.contractRate.value = st.rate;
+    els.force365.checked = st.force365;
+    setUnitRadio(st.unit);
+    updateContractLabels(m);
+    updateContractVisibility();
+    updatePaymentsVisibility();
+    // switching tabs clears the (now mode-mismatched) result
     clearError(); hideResult();
   }
 
@@ -536,17 +995,68 @@ function buildReport(res){
     clearError();
     const principal = parseAmount(els.amount.value);
     if(!(principal>0)||!isFinite(principal)){ hideResult(); showError(ERRORS.AMOUNT); return; }
+
+    const basis = currentBasis();
+    let contractRatePct = null;
+    if(basis==="contractual"){
+      contractRatePct = parseAmount(els.contractRate.value);
+      if(!(contractRatePct>=0)||!isFinite(contractRatePct)){
+        hideResult(); showError(mode==="interest"?ERRORS.RATE_INTEREST:ERRORS.RATE_VIIVIS); return;
+      }
+    }
     if(!els.start.value){ hideResult(); showError(ERRORS.NO_START); return; }
     if(!els.end.value){ hideResult(); showError(ERRORS.NO_END); return; }
 
-    const res = calculate({principal, startISO:els.start.value, endISO:els.end.value, mode});
+    const force365 = (basis==="contractual" && mode==="interest") ? els.force365.checked : false;
+    const rateUnit = (basis==="contractual" && mode==="viivis") ? currentUnit() : "annual";
+
+    // viivis + at least one payment -> payment simulation
+    if(mode==="viivis"){
+      const { payments, incomplete } = collectPayments();
+      if(incomplete){ hideResult(); showError(ERRORS.PAYMENT_INCOMPLETE); return; }
+      if(payments.length){
+        for(const p of payments){
+          if(!(p.amount>0)||!isFinite(p.amount)){ hideResult(); showError(ERRORS.PAYMENT_AMOUNT); return; }
+        }
+        const sim = simulate({principal, startISO:els.start.value, endISO:els.end.value, basis,
+                              contractRatePct, rateUnit, payments, allocationOrder:currentAlloc()});
+        if(!sim.ok){
+          hideResult();
+          if(sim.error==="PAYMENT_DATE") showError(ERRORS.PAYMENT_DATE(sim.date));
+          else if(sim.error==="PAYMENT_AMOUNT") showError(ERRORS.PAYMENT_AMOUNT);
+          else if(sim.error==="NO_RATE") showError(ERRORS.NO_RATE(sim.from));
+          else if(sim.error==="RATE") showError(ERRORS.RATE_VIIVIS);
+          else showError(ERRORS[sim.error] || ERRORS.INTERNAL);
+          return;
+        }
+        lastResult = sim; lastKind = "payments";
+        els.rLabel.textContent = "Viivis";
+        els.rFig.textContent = fmtMoney(sim.totals.totalViivis,2);
+        els.rDays.textContent = String(sim.totals.days);
+        els.resultTotalLbl.textContent = `Jääk seisuga ${sim.meta.endISO}`;
+        els.rTotal.textContent = fmtMoney(sim.totals.remainingDebt,2);
+        if(sim.payoff){
+          let note = `Võlg tasutud ${sim.payoff.dateISO}.`;
+          if(sim.totals.surplus>0) note += ` Enammakse ${fmtMoney(sim.totals.surplus,2)}.`;
+          els.payoffNote.textContent = note;
+          els.payoffNote.classList.add("show");
+        } else els.payoffNote.classList.remove("show");
+        els.result.classList.add("show");
+        els.report.disabled = false;
+        return;
+      }
+    }
+
+    const res = calculate({principal, startISO:els.start.value, endISO:els.end.value, mode, basis, contractRatePct, force365, rateUnit});
     if(!res.ok){
       hideResult();
       if(res.error==="NO_RATE") showError(ERRORS.NO_RATE(res.from));
       else showError(ERRORS[res.error] || ERRORS.INTERNAL);
       return;
     }
-    lastResult = res;
+    lastResult = res; lastKind = "plain";
+    els.payoffNote.classList.remove("show");
+    els.resultTotalLbl.textContent = "Kokku võlgnevus";
     els.rFig.textContent = fmtMoney(res.totals.totalInterest,2);
     els.rDays.textContent = String(res.totals.days);
     els.rTotal.textContent = fmtMoney(res.totals.totalDebt,2);
@@ -556,6 +1066,18 @@ function buildReport(res){
 
   function clearAll(){
     els.amount.value=""; els.start.value=""; els.end.value="";
+    els.contractRate.value="";
+    els.force365.checked=false;
+    setUnitRadio("annual");
+    els.paymentRows.innerHTML="";
+    const allocDef=document.querySelector('input[name="alloc"][value="statutory"]'); if(allocDef) allocDef.checked=true;
+    updateAllocVisibility();
+    tabState.interest={basis:"statutory",rate:"",force365:false,unit:"annual"};
+    tabState.viivis={basis:"statutory",rate:"",force365:false,unit:"annual"};
+    setBasisRadio("statutory");
+    updateContractLabels(mode);
+    updateContractVisibility();
+    updatePaymentsVisibility();
     clearError(); hideResult(); els.amount.focus();
   }
 
@@ -565,9 +1087,8 @@ function buildReport(res){
 
   function openReport(){
     if(!lastResult) return;
-    const isV = lastResult.meta.mode==="viivis";
-    els.reportTitle.textContent = isV ? "Viiviseraport" : "Intressiraport";
-    els.reportBox.textContent = buildReport(lastResult);
+    els.reportTitle.textContent = (lastResult.meta.mode==="viivis") ? "Viiviseraport" : "Intressiraport";
+    els.reportBox.textContent = lastKind==="payments" ? buildPaymentReport(lastResult) : buildReport(lastResult);
     openModal(els.reportModal);
     els.reportBox.focus();
   }
@@ -615,6 +1136,20 @@ function buildReport(res){
   els.amount.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
   els.start.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
   els.end.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+  els.contractRate.addEventListener("keydown",e=>{ if(e.key==="Enter") runCalc(); });
+
+  document.querySelectorAll('input[name="basis"]').forEach(r=>{
+    r.addEventListener("change",()=>{ updateContractVisibility(); clearError(); hideResult(); });
+  });
+  els.force365.addEventListener("change",()=>{ clearError(); hideResult(); });
+  document.querySelectorAll('input[name="rateUnit"]').forEach(r=>{
+    r.addEventListener("change",()=>{ updateAnnualEquiv(); clearError(); hideResult(); });
+  });
+  els.contractRate.addEventListener("blur", updateAnnualEquiv);
+  els.addPayment.addEventListener("click",()=>{ addPaymentRow(); clearError(); hideResult(); });
+  document.querySelectorAll('input[name="alloc"]').forEach(r=>{
+    r.addEventListener("change",()=>{ clearError(); hideResult(); });
+  });
 
   $("infoBtn").addEventListener("click",()=>openModal(els.infoModal));
   $("infoX").addEventListener("click",()=>closeModal(els.infoModal));
