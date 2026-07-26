@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Intressi- ja viivisekalkulaator (VÕS)</title>
+<title>Intressi- ja viivisekalkulaator</title>
 <style>
   :root{
     --red:#9e0303;
@@ -221,8 +221,8 @@
 <div class="wrap">
 
   <div class="head">
-    <p class="eyebrow">Võlaõigusseadus · § 94 / § 113</p>
-    <h1>Intressi- ja viivisekalkulaator</h1>
+    <p class="eyebrow">Seadus- ja lepingujärgse</p>
+    <h1>intressi ja viivise kalkulaator</h1>
     <button class="info-btn" id="infoBtn" type="button">Info</button>
     <hr class="rule">
   </div>
@@ -290,7 +290,7 @@
           <label class="lbl">Maksete arvestamise järjekord</label>
           <div class="basis" role="radiogroup" aria-label="Maksete arvestamise järjekord">
             <label><input type="radio" name="alloc" value="statutory" checked> Seadusjärgne (viivis enne põhivõlga)</label>
-            <label><input type="radio" name="alloc" value="reverse"> Vastupidine (põhivõlg enne viivist)</label>
+            <label><input type="radio" name="alloc" value="reverse"> Põhivõlg enne viivist</label>
           </div>
         </div>
       </div>
@@ -350,9 +350,8 @@
     <div class="content">
       <div class="info-text">
         <h3>Milleks see kalkulaator?</h3>
-        <p>See kalkulaator arvutab võlaõigusseaduse (VÕS) kohast seadusjärgset intressi (§ 94)
-           ja viivist (§ 113). Sisesta võlgnetav summa ning periood, mille eest intress või viivis
-           arvutatakse — kalkulaator teeb arvestused vastavalt valitud perioodi jooksul kehtinud määradele ja koostab sinu soovil ka detailse arvutuskäigu raporti.</p>
+        <p>See kalkulaator arvutab nii seadusjärgset (VÕS § 94 ja § 113) kui ka lepingujärgset intressi ja viivist. Sisesta võlgnetav summa ning periood, mille eest intress või viivis
+           arvutatakse, lisa vahepealsed maksed, kui neid on tehtud, ja kalkulaator teeb arvestused vastavalt valitud perioodi jooksul kehtinud määradele ning koostab sinu soovil ka detailse arvutuskäigu raporti.</p>
         <p>Baasintressimäärad põhinevad Eesti Panga avaldatud poolaastastel määradel. Toetatud
            periood algab 01.01.2004.</p>
 
@@ -363,7 +362,7 @@
         <p>Arvutused tehakse täielikult sinu seadmes. Serveripoolset töötlust ei toimu.</p>
 
         <h3>Vastutus</h3>
-        <p>Kalkulaator on abivahend. Õiguslike otsuste tegemine (nt arvutuse kuupäevade korrektne valimine) on kasutaja vastutus. Autor on küll kontrollinud arvutuskäigu korrektsust, kuid siiski ei võta selle eest endale vastutust.</p>
+        <p>Kalkulaator on abivahend. Õiguslike otsuste tegemine (nt arvutuse kuupäevade korrektne valimine) on kasutaja vastutus. Autor on küll kontrollinud kalkulaatori korrektsust, kuid siiski ei võta selle eest endale vastutust.</p>
       </div>
     </div>
     <footer class="mfoot">
@@ -843,11 +842,11 @@ function buildPaymentReport(r){
     out.push("(7% kuni 14.04.2013, 8% alates 15.04.2013).");
   }
   out.push(m.allocationOrder==="reverse"
-    ? "Maksete arvestus: põhivõlg enne viivist (lepingust tulenevalt)."
+    ? "Maksete arvestus: põhivõlg enne viivist (lepingulne)."
     : "Maksete arvestus: VÕS \u00A7 88 lg 6 (viivis enne põhivõlga).");
   out.push(perDay
-    ? "Päevade arvestus: tegelik päevade arv. Otspunktid kaasatud."
-    : "Päevade arvestus: tegelik/tegelik. Otspunktid kaasatud.");
+    ? "Päevade arvestus: tegelik päevade arv. Algus- ja lõppkuupäev arvestusse kaasatud."
+    : "Päevade arvestus: tegelik/tegelik. Algus- ja lõppkuupäev arvestusse kaasatud.");
   return out.join("\n");
 }
 
