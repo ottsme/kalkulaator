@@ -231,8 +231,8 @@
 
   <div class="card">
     <div class="tabs" role="tablist">
-      <button class="tab" id="tab-interest" role="tab" aria-selected="true" type="button">Intressikalkulaator</button>
-      <button class="tab" id="tab-viivis"   role="tab" aria-selected="false" type="button">Viivisekalkulaator</button>
+      <button class="tab" id="tab-viivis"   role="tab" aria-selected="true" type="button">Viivisekalkulaator</button>
+      <button class="tab" id="tab-interest" role="tab" aria-selected="false" type="button">Intressikalkulaator</button>
     </div>
 
     <div class="body">
@@ -304,7 +304,7 @@
       <div class="error" id="error"></div>
 
       <div class="result" id="result">
-        <div class="rlabel" id="resultLabel">Intress</div>
+        <div class="rlabel" id="resultLabel">Viivis</div>
         <div class="figure" id="resultFigure">—</div>
         <div class="payoff-note" id="payoffNote"></div>
         <div class="sub">
@@ -855,7 +855,7 @@ function buildPaymentReport(r){
    ============================================================ */
 (function(){
   const $ = id => document.getElementById(id);
-  let mode = "interest";
+  let mode = "viivis";
   let lastResult = null;
 
   // basis (seadus/leping) and contractual rate are remembered per tab;
