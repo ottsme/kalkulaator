@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Intressi- ja viivisekalkulaator</title>
+<title>Viivise- ja intressikalkulaator</title>
 <style>
   :root{
     --red:#9e0303;
@@ -222,7 +222,7 @@
 
   <div class="head">
     <p class="eyebrow">Seadus- ja lepingujärgse</p>
-    <h1>intressi ja viivise kalkulaator</h1>
+    <h1>viivise ja intressi kalkulaator</h1>
     <button class="info-btn" id="infoBtn" type="button">Info</button>
     <hr class="rule">
   </div>
@@ -316,7 +316,7 @@
   </div>
 
   <footer>
-    Copyright 2026, Ott Saame<br>
+    © 2026, Ott Saame<br>
     <a href="mailto:ott.saame@concordia.ee">ott.saame@concordia.ee</a>
   </footer>
 </div>
@@ -363,6 +363,9 @@
 
         <h3>Vastutus</h3>
         <p>Kalkulaator on abivahend. Õiguslike otsuste tegemine (nt arvutuse kuupäevade korrektne valimine) on kasutaja vastutus. Autor on küll kontrollinud kalkulaatori korrektsust, kuid siiski ei võta selle eest endale vastutust.</p>
+
+        <h3>Vead ja ettepanekud</h3>
+        <p>Kui märkad mingit viga või tahad teha mingit ettepanekut, palun lahkesti teata <a href="mailto:ott.saame@concordia.ee">ott.saame@concordia.ee</a>.</p>
       </div>
     </div>
     <footer class="mfoot">
@@ -737,7 +740,7 @@ function buildReport(res){
   if(contractual){
     if(res.meta.perDay){
       out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPctTrim(res.meta.contractRatePct)} päevas`);
-      out.push("(aastamäär arvutuslik, 365-päevase aasta alusel).");
+      out.push("(aastamäär arvestuslik, 365-päevase aasta alusel).");
     } else {
       out.push(`Arvutuse alus: lepingujärgne ${isV?"viivis":"intress"} ${fmtPct(res.meta.contractRatePct,2)} aastas.`);
     }
@@ -833,7 +836,7 @@ function buildPaymentReport(r){
   if(contractual){
     if(perDay){
       out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPctTrim(m.contractRatePct)} päevas`);
-      out.push("(aastamäär arvutuslik, 365-päevase aasta alusel).");
+      out.push("(aastamäär arvestuslik, 365-päevase aasta alusel).");
     } else {
       out.push(`Arvutuse alus: lepingujärgne viivis ${fmtPct(m.contractRatePct,2)} aastas.`);
     }
