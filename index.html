@@ -486,7 +486,7 @@ function calculate({principal,startISO,endISO,mode,basis="statutory",contractRat
     const year=toParts(segStart).y, diy=use365?365:daysInYear(year);
     let basePct=null, addon=0, effPct, dailyExact, dailyRatePct6;
     if(perDay){
-      effPct = contractRatePct*365;                             // annual equivalent (arvutuslik, /365)
+      effPct = contractRatePct*365;                             // annual equivalent (arvestuslik, /365)
       dailyRatePct6 = round6(contractRatePct);                  // entered day rate
       dailyExact = principal*(contractRatePct/100);
     } else if(contractual){
@@ -705,7 +705,7 @@ function buildReport(res){
   const totLbl      = isV?"Kokku viivis:":"Kokku intress:";
   // statutory viivis shows the base + add-on breakdown; per-day shows an informational annual equivalent
   const rateYearVal = s => {
-    if(res.meta.perDay) return `${fmtPct(s.effPct,2)} (arvutuslik, 365-päevase aasta alusel)`;
+    if(res.meta.perDay) return `${fmtPct(s.effPct,2)} (arvestuslik, 365-päevase aasta alusel)`;
     if(isV && !contractual) return `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)`;
     return `${fmtPct(s.effPct,2)}`;
   };
@@ -778,7 +778,7 @@ function buildPaymentReport(r){
   const W=27, L=(l,v)=>l.padEnd(W)+v, SEP="=".repeat(52), THIN="-".repeat(52);
   const m=r.meta, perDay=m.perDay, contractual=m.basis==="contractual";
   const rateYearVal = s => perDay
-    ? `${fmtPct(s.effPct,2)} (arvutuslik, 365-päevase aasta alusel)`
+    ? `${fmtPct(s.effPct,2)} (arvestuslik, 365-päevase aasta alusel)`
     : (!contractual ? `${fmtPct(s.effPct,2)} (baasintress ${fmtPct(s.basePct,2)} + viivis ${s.addon}%)` : `${fmtPct(s.effPct,2)}`);
   const out=[];
   out.push("VIIVISERAPORT"); out.push(SEP); out.push("");
