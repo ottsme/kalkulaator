@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Viivise- ja intressikalkulaator</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Viivise- ja intressikalkulaator">
+<meta property="og:description" content="Seadusjärgse ja lepingujärgse viivise ning intressi kalkulaator — VÕS § 113 ja § 94. Vahemaksed ja arvutuskäigu raport.">
+<meta property="og:url" content="https://ottsme.github.io/kalkulaator/">
+<meta property="og:image" content="https://ottsme.github.io/kalkulaator/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="et_EE">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root{
     --red:#9e0303;
@@ -845,7 +854,7 @@ function buildPaymentReport(r){
     out.push("(7% kuni 14.04.2013, 8% alates 15.04.2013).");
   }
   out.push(m.allocationOrder==="reverse"
-    ? "Maksete arvestus: põhivõlg enne viivist (lepingulne)."
+    ? "Maksete arvestus: põhivõlg enne viivist (lepinguline)."
     : "Maksete arvestus: VÕS \u00A7 88 lg 6 (viivis enne põhivõlga).");
   out.push(perDay
     ? "Päevade arvestus: tegelik päevade arv. Algus- ja lõppkuupäev arvestusse kaasatud."
